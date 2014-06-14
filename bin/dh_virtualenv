@@ -53,33 +53,38 @@ def main():
         dh = DebHelper(packages=options.package or None)
     else:
         dh = DebHelper(options)
-    for package, details in dh.packages.items():
-        def _info(msg):
-            log.info('{0}: {1}'.format(package, msg))
 
-        _info('Processing package...')
-        deploy = Deployment.from_options(package, options)
+    def _info(msg):
+        log.info(msg)
 
-        _info('Creating virtualenv')
-        deploy.create_virtualenv()
+    _info('Processing package...')
+    deploy = Deployment.from_options(dh.source_name, options)
 
-        _info('Installing dependencies')
-        deploy.install_dependencies()
+    _info('Creating virtualenv')
+    deploy.create_virtualenv()
 
-        _info('Installing package')
-        deploy.install_package()
-        if options.test:
-            _info('Running tests')
-            deploy.run_tests()
-        else:
-            _info('Skipped tests')
+    _info('Installing dependencies')
+    deploy.install_dependencies()
 
-        _info('Fixing paths')
-        deploy.fix_activate_path()
-        deploy.fix_shebangs()
-        deploy.fix_local_symlinks()
+    _info('Installing package')
+    deploy.install_package()
+    if options.test:
+        _info('Running tests')
+        deploy.run_tests()
+    else:
+        _info('Skipped tests')
 
-        _info('dh-virtualenv: All done!')
+    _info('Fixing paths')
+    deploy.fix_activate_path()
+    deploy.fix_shebangs()
+    deploy.fix_local_symlinks()
+
+    _info('Linking to common virtualenv')
+    for package in dh.packages:
+        package_dir = os.path.join("debian", package, "usr/share")
+        os.system("cp -rf %s %s" % (deploy.debian_root, package_dir))
+
+    _info('dh-virtualenv: All done!')
 
 if __name__ == '__main__':
     sys.exit(main() or 0)
